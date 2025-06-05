@@ -1,0 +1,38 @@
+{
+  "name": "@llmindset/mcp-miro",
+  "version": "0.1.1",
+  "description": "A Model Context Protocol server to connect to the MIRO Whiteboard Application",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },  
+  "bin": {
+    "mcp-miro": "./build/index.js"
+  },
+  "files": [
+    "build"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/evalstate/mcp-miro"
+  },
+  "bugs":{
+    "url": "https://github.com/evalstate/mcp-miro/issues"
+  },  
+  "scripts": {
+    "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
+    "prepare": "npm run build",
+    "watch": "tsc --watch",
+    "inspector": "npx @modelcontextprotocol/inspector build/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "0.6.0",
+    "node-fetch": "^3.3.2",
+    "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "@types/yargs": "^17.0.33",
+    "typescript": "^5.3.3"
+  }
+}
