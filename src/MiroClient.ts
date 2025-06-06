@@ -11,7 +11,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 
-
 interface MiroBoard {
   id: string;
   name: string;
@@ -147,7 +146,7 @@ export class MiroClient {
     // Use fixed geometry size unless overridden
     const geometry = data.geometry || { width: 150 }; // You can adjust this to 100, 120 etc.
     const position = data.position || { x: 0, y: 0, origin: "center" };
-  
+
     // Append image file
     formData.append("resource", fileBuffer, {
       filename: imageFileName,
@@ -155,17 +154,24 @@ export class MiroClient {
     });
   
     // Append metadata
+    const dataJson = `{
+      "position": {
+        "x": ${position.x},
+        "y": ${position.y}
+      },
+      "geometry": {
+        "width": ${geometry.width}
+      }
+    }`;
+    
     formData.append(
       "data",
-      JSON.stringify({
-        title: data.title || imageFileName,
-        altText: data.altText || "",
-        position,
-        geometry,
-        parent: data.parentId ? { id: data.parentId } : null,
-      })
+      dataJson,
+      {
+        contentType: "application/json"
+      }
     );
-  
+
     // Send to Miro API
     const response = await fetch(`https://api.miro.com/v2/boards/${boardId}/images`, {
       method: "POST",
@@ -293,7 +299,6 @@ export class MiroClient {
       body: data
     }) as Promise<MiroItem>;
   }
-
 
 
   async updateConnector(
