@@ -543,6 +543,79 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     required: ["boardId", "connectorId"],
                 },
             },
+            // {
+            //   name: "get_logo",
+            //   description: "Fetch appropriate logos of each tool.",
+            //   inputSchema: {
+            //     type: "object",
+            //     properties: {
+            //       boardId: {
+            //         type: "string",
+            //         description: "Unique identifier (ID) of the board where to add the image.",
+            //       },
+            //       imageFileName: {
+            //         type: "string",
+            //         description: "Name of the image file to use (e.g. 'amazon-s3-logo.png', 'amazon-s3-title.png').",
+            //         enum: [
+            //           "amazon-s3-logo.png",
+            //           "amazon-s3-title.png",
+            //           "appleMusic-logo.png",
+            //           "appleTv-logo.png",
+            //           "aws-logo.png",
+            //           "calendar-logo.png",
+            //           "dataPipeline-logo.png",
+            //           "docker-logo.png",
+            //           "docker-title.png",
+            //           "fastapi-logo.png",
+            //           "fastapi-title.png",
+            //           "insights-logo.png",
+            //           "keynote-logo.png",
+            //           "llm-logo.png",
+            //           "mail-logo.png",
+            //           "miro-logo.png",
+            //           "miro-title.png",
+            //           "orchestrator-logo.png",
+            //           "quip-logo.png",
+            //           "quip-title.png",
+            //           "radar-logo.png",
+            //           "react-logo.png",
+            //           "react-title.png",
+            //           "sagemaker-logo.png",
+            //           "slack-logo.png",
+            //           "slack-title.png",
+            //           "snowflake-logo.png",
+            //           "snowflake-title.png",
+            //           "tigergraph-logo.png",
+            //           "tigergraph-title.png",
+            //           "webex-logo.png",
+            //           "amazon-s3-logo.png",
+            //         ],
+            //       },
+            //       title: {
+            //         type: "string",
+            //         description: "Optional title text to describe the image (used for altText).",
+            //       },
+            //       position: {
+            //         type: "object",
+            //         description: "Optional position of the image on the board.",
+            //         properties: {
+            //           x: { type: "number" },
+            //           y: { type: "number" },
+            //         },
+            //       },
+            //       geometry: {
+            //         type: "object",
+            //         description: "Optional geometry to set width, height, rotation.",
+            //         properties: {
+            //           width: { type: "number" },
+            //           height: { type: "number" },
+            //           rotation: { type: "number" },
+            //         },
+            //       },
+            //     },
+            //     required: ["boardId", "imageFileName"],
+            //   }
+            // },
             {
                 name: "get_logo",
                 description: "Fetch appropriate logos of each tool.",
@@ -551,49 +624,28 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     properties: {
                         boardId: {
                             type: "string",
-                            description: "Unique identifier (ID) of the board where to add the image.",
+                            description: "Unique identifier (ID) of the Miro board where the image will be uploaded."
                         },
                         imageFileName: {
                             type: "string",
-                            description: "Name of the image file to use (e.g. 'amazon-s3-logo.png', 'amazon-s3-title.png').",
+                            description: "Name of the image file located in the 'static' folder to upload (e.g., 'miro-logo.png').",
                             enum: [
-                                "amazon-s3-logo.png",
-                                "amazon-s3-title.png",
-                                "appleMusic-logo.png",
-                                "appleTv-logo.png",
-                                "aws-logo.png",
-                                "calendar-logo.png",
-                                "dataPipeline-logo.png",
-                                "docker-logo.png",
-                                "docker-title.png",
-                                "fastapi-logo.png",
-                                "fastapi-title.png",
-                                "insights-logo.png",
-                                "keynote-logo.png",
-                                "llm-logo.png",
-                                "mail-logo.png",
-                                "miro-logo.png",
-                                "miro-title.png",
-                                "orchestrator-logo.png",
-                                "quip-logo.png",
-                                "quip-title.png",
-                                "radar-logo.png",
-                                "react-logo.png",
-                                "react-title.png",
-                                "sagemaker-logo.png",
-                                "slack-logo.png",
-                                "slack-title.png",
-                                "snowflake-logo.png",
-                                "snowflake-title.png",
-                                "tigergraph-logo.png",
-                                "tigergraph-title.png",
-                                "webex-logo.png",
-                                "amazon-s3-logo.png",
-                            ],
+                                "amazon-s3-logo.png", "amazon-s3-title.png", "appleMusic-logo.png", "appleTv-logo.png", "aws-logo.png",
+                                "calendar-logo.png", "dataPipeline-logo.png", "docker-logo.png", "docker-title.png", "fastapi-logo.png",
+                                "fastapi-title.png", "insights-logo.png", "keynote-logo.png", "llm-logo.png", "mail-logo.png",
+                                "miro-logo.png", "miro-title.png", "orchestrator-logo.png", "quip-logo.png", "quip-title.png",
+                                "radar-logo.png", "react-logo.png", "react-title.png", "sagemaker-logo.png", "slack-logo.png",
+                                "slack-title.png", "snowflake-logo.png", "snowflake-title.png", "tigergraph-logo.png",
+                                "tigergraph-title.png", "webex-logo.png"
+                            ]
                         },
                         title: {
                             type: "string",
-                            description: "Optional title text to describe the image (used for altText).",
+                            description: "Optional title for the image (used as the image title on the board)."
+                        },
+                        altText: {
+                            type: "string",
+                            description: "Optional alt text for accessibility."
                         },
                         position: {
                             type: "object",
@@ -601,19 +653,30 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                             properties: {
                                 x: { type: "number" },
                                 y: { type: "number" },
+                                origin: {
+                                    type: "string",
+                                    enum: ["center", "top_left", "top_right", "bottom_left", "bottom_right"],
+                                    default: "center"
+                                }
                             },
+                            required: ["x", "y"] // Optional: only if you want to enforce position coordinates
                         },
                         geometry: {
                             type: "object",
-                            description: "Optional geometry to set width, height, rotation.",
+                            description: "Optional geometry parameters (e.g., width, height, rotation).",
                             properties: {
                                 width: { type: "number" },
                                 height: { type: "number" },
-                                rotation: { type: "number" },
-                            },
+                                rotation: { type: "number" }
+                            }
                         },
+                        parentId: {
+                            type: ["string", "null"],
+                            description: "Optional parent frame ID. If null, image is attached directly to canvas.",
+                            default: null
+                        }
                     },
-                    required: ["boardId", "imageFileName"],
+                    required: ["boardId", "imageFileName"]
                 }
             },
             {
@@ -769,6 +832,42 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     {
                         type: "text",
                         text: `Created sticky note ${stickyNote.id} on board ${boardId}`,
+                    },
+                ],
+            };
+        }
+        case "create_connector": {
+            const { boardId, startItem, endItem, shape, captions, style } = request.params.arguments;
+            const connectorItem = await miroClient.createConnector(boardId, {
+                startItem,
+                endItem,
+                shape: shape || "curved",
+                captions: captions || [],
+                style: style || {}
+            });
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: `Created connector between ${startItem.id} and ${endItem.id} with ID ${connectorItem.id} on board ${boardId}`,
+                    },
+                ],
+            };
+        }
+        case "get_logo": {
+            const { boardId, imageFileName, title, altText, position, geometry, parentId, } = request.params.arguments;
+            const imageItem = await miroClient.getLogo(boardId, imageFileName, {
+                title: title || imageFileName,
+                altText: altText || "",
+                position: position || { x: 0, y: 0, origin: "center" },
+                geometry: geometry || { width: 200 },
+                parentId: parentId || null,
+            });
+            return {
+                content: [
+                    {
+                        type: "text",
+                        text: `Uploaded image '${imageFileName}' with ID ${imageItem.id} on board ${boardId}`,
                     },
                 ],
             };

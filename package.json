@@ -5,7 +5,7 @@
   "type": "module",
   "publishConfig": {
     "access": "public"
-  },  
+  },
   "bin": {
     "mcp-miro": "./build/index.js"
   },
@@ -14,11 +14,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/evalstate/mcp-miro"
+    "url": "git+https://github.com/ira20022/mcp_test"
   },
-  "bugs":{
-    "url": "https://github.com/evalstate/mcp-miro/issues"
-  },  
+  "bugs": {
+    "url": "https://github.com/ira20022/mcp_test"
+  },
   "scripts": {
     "build": "tsc && node -e \"require('fs').chmodSync('build/index.js', '755')\"",
     "prepare": "npm run build",
@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "0.6.0",
+    "form-data": "^4.0.2",
     "node-fetch": "^3.3.2",
     "yargs": "^17.7.2"
   },
