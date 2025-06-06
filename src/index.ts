@@ -25,7 +25,7 @@ import path from 'path';
 //   })
 //   .help().argv;
 
-const oauthToken = "eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_nnvACrX3PQ2eyddiwtXzN1ztys8";
+const oauthToken = "eyJtaXJvLm9yaWdpbiI6ImV1MDEifQ_PcUNlzbLozdudL2UkM7AHKiHYBk";
 
 if (!oauthToken) {
   console.error(
@@ -656,17 +656,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       // },
       {
         name: "get_logo",
-        description: "Fetch appropriate logos of each tool.",
+        description: "Fetch appropriate logos of each tool. Always specify width",
         inputSchema: {
           type: "object",
           properties: {
             boardId: {
               type: "string",
-              description: "Unique identifier (ID) of the Miro board where the image will be uploaded."
+              description: "ID of the Miro board where the image will be uploaded."
             },
             imageFileName: {
               type: "string",
-              description: "Name of the image file located in the 'static' folder to upload (e.g., 'miro-logo.png').",
+              description: "Filename of the image located in the 'static' folder (e.g., 'aws-logo.png').",
               enum: [
                 "amazon-s3-logo.png", "amazon-s3-title.png", "appleMusic-logo.png", "appleTv-logo.png", "aws-logo.png",
                 "calendar-logo.png", "dataPipeline-logo.png", "docker-logo.png", "docker-title.png", "fastapi-logo.png",
@@ -677,47 +677,66 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 "tigergraph-title.png", "webex-logo.png"
               ]
             },
-            title: {
-              type: "string",
-              description: "Optional title for the image (used as the image title on the board)."
-            },
-            altText: {
-              type: "string",
-              description: "Optional alt text for accessibility."
-            },
-            position: {
+            data: {
               type: "object",
-              description: "Optional position of the image on the board.",
               properties: {
-                x: { type: "number" },
-                y: { type: "number" },
-                origin: {
+                title: {
                   type: "string",
-                  enum: ["center", "top_left", "top_right", "bottom_left", "bottom_right"],
-                  default: "center"
+                  description: "Optional title for the image on the board."
+                },
+                altText: {
+                  type: "string",
+                  description: "Alt text for accessibility."
+                },
+                position: {
+                  type: "object",
+                  properties: {
+                    x: { type: "number", default: 0 },
+                    y: { type: "number", default: 0 },
+                    origin: {
+                      type: "string",
+                      description: "Always should be center"
+                    },
+                    relativeTo: {
+                      type: "string",
+                      description: "Always should be canvas_center"
+                    },
+                  },
+                  required: ["x", "y"],
+                  description: "Position of the image on the board."
+                },
+                geometry: {
+                  type: "object",
+                  properties: {
+                    width: {
+                      type: "number",
+                      description: "Width of the image in pixels."
+                    },
+                    height: {
+                      type: "number",
+                      description: "Height of the image in pixels. Do not give if width is given."
+                    },
+                    rotation: {
+                      type: "number",
+                      description: "Rotation angle in degrees (positive: clockwise, negative: counter-clockwise)."
+                    }
+                  }
+                },
+                parent: {
+                  type: "object",
+                  properties: {
+                    id: {
+                      type: "string",
+                      description: "Optional parent frame ID."
+                    }
+                  }
                 }
-              },
-              required: ["x", "y"]  // Optional: only if you want to enforce position coordinates
-            },
-            geometry: {
-              type: "object",
-              description: "Optional geometry parameters (e.g., width, height, rotation).",
-              properties: {
-                width: { type: "number" },
-                height: { type: "number" },
-                rotation: { type: "number" }
               }
-            },
-            parentId: {
-              type: ["string", "null"],
-              description: "Optional parent frame ID. If null, image is attached directly to canvas.",
-              default: null
             }
           },
           required: ["boardId", "imageFileName"]
         }
       },
-    
       {
         name: "create_shape",
         description:
@@ -896,7 +915,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         captions,
         style
       } = request.params.arguments as any;
-    
+
       const connectorItem = await miroClient.createConnector(boardId, {
         startItem,
         endItem,
@@ -904,7 +923,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         captions: captions || [],
         style: style || {}
       });
-    
+
       return {
         content: [
           {
@@ -919,26 +938,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const {
         boardId,
         imageFileName,
-        title,
-        altText,
-        position,
-        geometry,
-        parentId,
+        data
       } = request.params.arguments as any;
-    
+
       const imageItem = await miroClient.getLogo(boardId, imageFileName, {
-        title: title || imageFileName,
-        altText: altText || "",
-        position: position || { x: 0, y: 0, origin: "center" },
-        geometry: geometry || { width: 200 },
-        parentId: parentId || null,
+        title: data.title || imageFileName,
+        altText: data.altText || "",
+        position: data.position || { x: 100, y: 100, origin: "center" },
+        geometry: data.geometry || { width: 100, height: 100},
+        parentId: data.parentId || null,
       });
-    
+
       return {
         content: [
           {
             type: "text",
-            text: `Uploaded image '${imageFileName}' with ID ${imageItem.id} on board ${boardId}`,
+            text: `Uploaded image '${imageFileName}' with ID ${imageItem.id} on board ${boardId} with response ${imageItem.position} with position ${data.position.x} ${data.position.y} Geometry: ${data.geometry.width}`,
           },
         ],
       };
@@ -1010,10 +1025,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         ],
       };
     }
-      
-    
 
-  
+
     default:
       throw new Error("Unknown tool");
   }
