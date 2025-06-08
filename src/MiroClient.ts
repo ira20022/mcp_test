@@ -63,25 +63,25 @@ export class MiroClient {
   // }
   private async fetchApi(path: string, options: { method?: string; body?: any } = {}) {
     const isFormData = options.body instanceof FormData;
-  
+
     const headers: Record<string, string> = {
       'Authorization': `Bearer ${this.token}`,
     };
-  
+
     if (!isFormData) {
       headers['Content-Type'] = 'application/json';
     }
-  
+
     const response = await fetch(`https://api.miro.com/v2${path}`, {
       method: options.method || 'GET',
       headers,
       body: options.body && !isFormData ? JSON.stringify(options.body) : options.body,
     });
-  
+
     if (!response.ok) {
       throw new Error(`Miro API error: ${response.status} ${response.statusText}`);
     }
-  
+
     return response.json();
   }
 
@@ -110,16 +110,16 @@ export class MiroClient {
 
   // async getLogo(boardId: string, imageFileName: string, data: any): Promise<MiroItem> {
   //   const formData = new FormData();
-  
+
   //   // Get file buffer from static folder
   //   const filePath = path.join(__dirname, 'static', imageFileName);
   //   const fileBuffer = await fs.readFile(filePath);
-  
+
   //   formData.append("resource", fileBuffer, {
   //     filename: imageFileName,
   //     contentType: "image/png", // or infer from file extension
   //   });
-  
+
   //   formData.append(
   //     "data",
   //     JSON.stringify({
@@ -130,7 +130,7 @@ export class MiroClient {
   //       parent: { id: data.parentId || null },
   //     })
   //   );
-  
+
   //   return this.fetchApi(`/boards/${boardId}/images`, {
   //     method: "POST",
   //     body: formData,
@@ -138,11 +138,11 @@ export class MiroClient {
   // }
   async getLogo(boardId: string, imageFileName: string, data: any): Promise<MiroItem> {
     const formData = new FormData();
-  
+
     // Get absolute path to static image file
     const filePath = path.join(__dirname, "static", imageFileName);
     const fileBuffer = await fs.readFile(filePath);
-  
+
     // Use fixed geometry size unless overridden
     const geometry = data.geometry || { width: 150 }; // You can adjust this to 100, 120 etc.
     const position = data.position || { x: 0, y: 0, origin: "center" };
@@ -152,7 +152,7 @@ export class MiroClient {
       filename: imageFileName,
       contentType: "image/png"
     });
-  
+
     // Append metadata
     const dataJson = `{
       "position": {
@@ -163,7 +163,7 @@ export class MiroClient {
         "width": ${geometry.width}
       }
     }`;
-    
+
     formData.append(
       "data",
       dataJson,
@@ -181,12 +181,12 @@ export class MiroClient {
       },
       body: formData,
     });
-  
+
     if (!response.ok) {
       const error = await response.text();
       throw new Error(`Image upload failed: ${error}`);
     }
-  
+
     const result = (await response.json()) as MiroItem;
     return result;
   }
@@ -222,65 +222,85 @@ export class MiroClient {
     "fastapi-logo.png", "radar-logo.png",
     "fastapi-title.png", "react-logo.png"
   ]);
-  
+
   async bulkCreateItems(boardId: string, items: any[]): Promise<MiroItem[]> {
-    const createdItems: MiroItem[] = [];
-  
+    const finalItems: any[] = [];
+
     for (const item of items) {
-      const fileName = item.imageFileName;
-  
-      if (fileName && this.ALLOWED_IMAGES.has(fileName)) {
-        const filePath = path.join(__dirname, 'static', fileName);
-  
+      if (item.type === "image" && item.imageFileName && this.ALLOWED_IMAGES.has(item.imageFileName)) {
         try {
-          const fileBuffer = await fs.readFile(filePath);
+          const filePath = path.join(__dirname, "static", item.imageFileName);
+          const buffer = await fs.readFile(filePath);
+
           const formData = new FormData();
-  
-          formData.append("resource", fileBuffer, {
-            filename: fileName,
-            contentType: "image/png", // Adjust if needed
+          formData.append("resource", buffer, {
+            filename: item.imageFileName,
+            contentType: "image/png",
           });
-  
+
+
+          const dataJson = `{
+            "position": {
+              "x": ${item.position.x},
+              "y": ${item.position.y}
+            },
+            "geometry": {
+              "width": ${item.geometry.width}
+            }
+          }`;
+
           formData.append(
             "data",
-            JSON.stringify({
-              title: item.title || fileName,
-              altText: item.altText || "",
-              position: item.position || { x: 0, y: 0, origin: "center" },
-              geometry: item.geometry || { width: 200 },
-              parent: { id: item.parentId || null },
-            })
+            dataJson,
+            {
+              contentType: "application/json"
+            }
           );
-  
+
           const response = await fetch(`https://api.miro.com/v2/boards/${boardId}/images`, {
             method: "POST",
             headers: {
               ...formData.getHeaders(),
-              'Authorization': `Bearer ${this.token}`,
+              Authorization: `Bearer ${this.token}`,
             },
             body: formData,
           });
-  
+
           if (!response.ok) {
-            const error = await response.json();
-            throw new Error(`Image upload failed: ${response.statusText}`);
+            console.error(`Image upload failed for ${item.imageFileName}`);
+            continue;
           }
-  
-          const created = await response.json() as MiroItem;
-          createdItems.push(created);
-  
+
+          const created = await response.json();
+          // finalItems.push(created); // Include created image in finalItems
+
         } catch (err) {
-          console.error(`Failed to upload image: ${fileName}`, err);
-          continue; // Skip this item and proceed with the next
+          console.error(`Failed to process image file: ${item.imageFileName}`, err);
+          continue;
         }
+      } else {
+        // Keep non-image items (or images not in ALLOWED_IMAGES) as-is
+        finalItems.push(item);
       }
-  
-      // Remove local-only fields even if image wasn't uploaded
-      delete item.imageFileName;
-      delete item.title;
     }
-  
-    return createdItems;
+
+    // Bulk create remaining items (shapes, text, etc.)
+    const response = await fetch(`https://api.miro.com/v2/boards/${boardId}/items/bulk`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(finalItems)
+    });
+
+    if (!response.ok) {
+      const error = await response.json() as { message?: string };
+      throw new Error(`Miro API error: ${error.message || response.statusText}`);
+    }
+
+    const result = await response.json() as { data: MiroItem[] };
+    return result.data || [];
   }
 
   async getFrames(boardId: string): Promise<MiroItem[]> {
@@ -331,4 +351,10 @@ export class MiroClient {
     }) as Promise<MiroConnectorList>;
   }
 
+  async createFrame(boardId: string, data: any): Promise<MiroItem> {
+    return this.fetchApi(`/boards/${boardId}/frames`, {
+      method: 'POST',
+      body: data
+    }) as Promise<MiroItem>;
+  }
 }
