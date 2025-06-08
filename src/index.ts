@@ -428,6 +428,85 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
+        name: "create_frame",
+        description: "Create a frame on a Miro board. Frames group objects visually and spatially.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            boardId: {
+              type: "string",
+              description: "Unique identifier (ID) of the board where you want to create a frame",
+            },
+            data: {
+              type: "object",
+              description: "Frame item data",
+              properties: {
+                format: {
+                  type: "string",
+                  description: "Frame format, defaults to 'custom'",
+                  default: "custom",
+                },
+                title: {
+                  type: "string",
+                  description: "Title text for the frame",
+                  default: "Sample frame title",
+                },
+                type: {
+                  type: "string",
+                  description: "Frame type, defaults to 'freeform'",
+                  default: "freeform",
+                }
+              },
+              required: ["title"],
+            },
+            style: {
+              type: "object",
+              description: "Style options for the frame",
+              properties: {
+                fillColor: {
+                  type: "string",
+                  description: "Fill color for the frame (hex values like #f5f6f8)",
+                  default: "#ffffffff",
+                },
+              },
+            },
+            position: {
+              type: "object",
+              description: "Location of the frame on the board",
+              properties: {
+                x: {
+                  type: "number",
+                  description: "X coordinate (center point of board is 0)",
+                  default: 0,
+                },
+                y: {
+                  type: "number",
+                  description: "Y coordinate (center point of board is 0)",
+                  default: 0,
+                },
+              },
+            },
+            geometry: {
+              type: "object",
+              description: "Size of the frame",
+              properties: {
+                width: {
+                  type: "number",
+                  description: "Width of the frame in pixels",
+                  default: 400,
+                },
+                height: {
+                  type: "number",
+                  description: "Height of the frame in pixels",
+                  default: 300,
+                },
+              },
+            },
+          },
+          required: ["boardId", "data", "style", "position", "geometry"],
+        },
+      },      
+      {
         name: "get_connector",
         description: "Retrieve information for a specific connector on a Miro board.",
         inputSchema: {
@@ -933,6 +1012,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         ],
       };
     }
+
+    case "create_frame": {
+      const { boardId, data, style, position, geometry } = request.params.arguments as any;
+    
+      const frameItem = await miroClient.createFrame(boardId, {
+        data,
+        style,
+        position,
+        geometry,
+      });
+    
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Created frame titled "${data.title}" with ID ${frameItem.id} on board ${boardId}`,
+          },
+        ],
+      };
+    }    
+    
 
     case "get_logo": {
       const {
